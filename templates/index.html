@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Break Planner</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 2rem;
+      background-color: #f8f9fa;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background-color: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    input, button, select {
+      margin: 0.5rem 0;
+      display: block;
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+	.remove-btn {
+		background-color: #efefef;
+		width: 20rem;
+	}
+
+	.action-btn {
+		background-color: orange;
+	}
+	button:hover{
+		opacity: .9;
+	}
+	button:active{
+		opacity: 1;
+		scale: 1.01;
+	}
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    ul li {
+      padding: 0.5rem;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .day-picker label {
+      margin-right: 10px;
+    }
+    .hidden {
+      display: none;
+    }
+    .activity-box {
+      margin-top: 2rem;
+    }
+	.two-columns {
+		display: flex
+;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: stretch;
+}
+	  .day-label{
+		  display: flex;
+	  }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Break Planner</h1>
+
+    <label>New Activity
+      <input id="newActivity" type="text" placeholder="e.g., Stretch, Meditate">
+    </label>
+    <button class="action-btn" onclick="addActivity()">Add Activity</button>
+
+    <ul id="activityList"></ul>
+	<div class="two-columns">
+		<div>
+
+    	<label>Break Duration (minutes)
+    	  <input id="breakTime" type="number" min="1" value="10">
+    	</label>
+
+    	<label>From Hour
+    	  <input id="from" type="time">
+    	</label>
+
+    	<label>To Hour
+    	  <input id="to" type="time">
+    	</label>
+
+		</div>
+    	<div class="day-picker">
+    	  <p>Pick Week Days:</p>
+    	  <label class="day-label"><input type="checkbox" value="0"> Mon</label>
+    	  <label class="day-label"><input type="checkbox" value="1"> Tue</label>
+    	  <label class="day-label"><input type="checkbox" value="2"> Wed</label>
+    	  <label class="day-label"><input type="checkbox" value="3"> Thu</label>
+    	  <label class="day-label"><input type="checkbox" value="4"> Fri</label>
+    	  <label class="day-label"><input type="checkbox" value="5"> Sat</label>
+    	  <label class="day-label"><input type="checkbox" value="6"> Sun</label>
+    	</div>
+	</div>
+
+    <button class="action-btn" onclick="savePage()">Save Page</button>
+    <button onclick="testNotification()">Test Notification in 30s</button>
+
+    <div class="activity-box">
+      <h3>Current Activity</h3>
+      <p id="scheduledActivity"></p>
+      <p id="timer"></p>
+    </div>
+  </div>
+
+  <script>
+	let pageData = null;
+    let pageId = null;
+    let activities = [];
+
+    function addActivity() {
+      const input = document.getElementById("newActivity");
+      const value = input.value.trim();
+      if (value) {
+        activities.push(value);
+        input.value = "";
+        renderActivityList();
+      }
+    }
+
+    function removeActivity(index) {
+      activities.splice(index, 1);
+      renderActivityList();
+    }
+
+    function renderActivityList() {
+      const list = document.getElementById("activityList");
+      list.innerHTML = "";
+      activities.forEach((act, i) => {
+        const li = document.createElement("li");
+        li.innerHTML = `${act} <button class="remove-btn" onclick="removeActivity(${i})">Remove</button>`;
+        list.appendChild(li);
+      });
+    }
+
+    function getTimeAsHour(inputId) {
+      const val = document.getElementById(inputId).value;
+      return parseInt(val.split(":")[0]);
+    }
+
+    function getSelectedDays() {
+      return Array.from(document.querySelectorAll(".day-picker input:checked")).map(cb => parseInt(cb.value));
+    }
+
+    function savePage() {
+      const breakTime = parseInt(document.getElementById("breakTime").value);
+      const from = getTimeAsHour("from");
+      const to = getTimeAsHour("to");
+      const weekDays = getSelectedDays();
+
+      const page = { activities, breakTime, from, to, weekDays };
+
+      fetch(`/api/${pageId}`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(page)
+      });
+    }
+
+    function testNotification() {
+      setTimeout(() => {
+        notify("Test Notification", "This is a test after 30s");
+      }, 30000);
+    }
+
+    function notify(title, body) {
+      if (Notification.permission === "granted") {
+        new Notification(title, { body });
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            new Notification(title, { body });
+          }
+        });
+      }
+    }
+
+	function sendBreakNotification(force=false){
+        const now = new Date();
+        const hour = now.getHours();
+        const day = now.getDay();
+		const page = pageData;
+        if ((page.weekDays.includes(day) && hour >= page.from && hour < page.to) || force) {
+          const activity = page.activities[Math.floor(Math.random() * page.activities.length)];
+			notify("Break Time", `${hour} - It's time to ${activity} for ${page.breakTime} minutes`);
+          document.getElementById("scheduledActivity").textContent = `${activity}`;
+
+          let seconds = page.breakTime * 60;
+          const timer = document.getElementById("timer");
+          timer.textContent = formatTime(seconds);
+
+          const interval = setInterval(() => {
+            seconds--;
+            timer.textContent = formatTime(seconds);
+            if (seconds <= 0) clearInterval(interval);
+          }, 1000);
+        }
+	}
+
+    function scheduleNotifications() {
+      setInterval(() => {
+		  sendBreakNotification();
+      }, 60 * 60 * 1000); // every hour
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    window.onload = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = window.location.pathname.split("/").pop();
+      if (id) {
+        pageId = id;
+        fetch(`/api/${pageId}`)
+          .then(res => res.json())
+          .then(data => {
+            activities = data.activities || [];
+            document.getElementById("breakTime").value = data.breakTime;
+            document.getElementById("from").value = `${data.from.toString().padStart(2, '0')}:00`;
+            document.getElementById("to").value = `${data.to.toString().padStart(2, '0')}:00`;
+            data.weekDays.forEach(day => {
+              document.querySelector(`.day-picker input[value='${day}']`).checked = true;
+            });
+            renderActivityList();
+			  pageData = data;
+            scheduleNotifications();
+          });
+      }
+    }
+  </script>
+</body>
+</html>
+
