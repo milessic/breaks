@@ -76,6 +76,18 @@
 	  .day-label{
 		  display: flex;
 	  }
+	  #not-supported {
+		  position: fixed;
+		  top: 0;
+		  width: 100vw;
+		  height: 100vh;
+		  background-color: white;
+		  z-index: 1000;
+	  }
+	  #not-supported div {
+		  margin-top: 25vh;
+		  margin-bottom: auto;
+	  }
   </style>
 </head>
 <body>
@@ -232,6 +244,9 @@
     }
 
     window.onload = () => {
+	  if (isAppleMobile()){
+		  createNotSupportedModal();
+	  }
       const urlParams = new URLSearchParams(window.location.search);
       const id = window.location.pathname.split("/").pop();
       if (id) {
@@ -252,6 +267,33 @@
           });
       }
     }
+	function isAppleMobile() {
+  const ua = navigator.userAgent || navigator.vendor || window.opera;
+
+  // Check for classic iPhone or iPad
+  if (/iPhone|iPad/i.test(ua)) {
+    return true;
+  }
+
+  // Special check for iPadOS 13+ which reports itself as Mac
+  const isMacLike = /Macintosh/i.test(ua);
+  const hasTouch = navigator.maxTouchPoints && navigator.maxTouchPoints > 1;
+
+  return isMacLike && hasTouch;
+
+
+	}
+
+	function createNotSupportedModal(){
+		const el = document.createElement("div");
+		el.id = "not-supported";
+		el.innerHTML = `<div><h1>Breaks</h1><h2>We are sorry, but your device does not support HTML notifications!</h2>
+			<p>
+			<a href="mailto:milessic@gmail.com?subject=Breaks%20-%20Ask%20to%20support%20device&body=User%20Agent%20is%20needed%20to%20determine%20what%20browser%20do%20you%20useUser%20Agent%20${navigator.userAgent}">Send mail</a>
+			</p>
+			</div>`
+		document.body.appendChild(el);
+			  }
   </script>
 </body>
 </html>
