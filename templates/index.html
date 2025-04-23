@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Break Planner</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧘</text></svg>">
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -116,7 +117,6 @@
 	</div>
 
     <button class="action-btn" onclick="savePage()">Save Page</button>
-    <button onclick="testNotification()">Test Notification in 30s</button>
 
     <div class="activity-box">
       <h3>Current Activity</h3>
@@ -187,11 +187,11 @@
 
     function notify(title, body) {
       if (Notification.permission === "granted") {
-        new Notification(title, { body });
+        new Notification(title, { body:body, icon:"https://openmoji.org/data/color/svg/1F9D8.svg" });
       } else if (Notification.permission !== "denied") {
         Notification.requestPermission().then(permission => {
           if (permission === "granted") {
-            new Notification(title, { body });
+            new Notification(title, { body:body, icon:"https://openmoji.org/data/color/svg/1F9D8.svg" });
           }
         });
       }
