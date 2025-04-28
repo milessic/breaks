@@ -84,10 +84,31 @@
 		  background-color: white;
 		  z-index: 1000;
 	  }
+	  #overlay{
+		  position: fixed;
+		  top: 0;
+		  width: 100vw;
+		  height: 100vh;
+		  background-color: black;
+		  opacity: 50%;
+		  z-index: 100;
+	  }
 	  #not-supported div {
 		  margin-top: 25vh;
 		  margin-bottom: auto;
 	  }
+	  #consent-popup {
+		  position: fixed;
+		  height: 120px;
+		  bottom: auto;
+		  top: 500px;
+		  left: 20px;
+		  right: 20px;
+		  background: #fff;
+		  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    	  z-index: 1000;
+	  }
+
   </style>
 </head>
 <body>
@@ -177,6 +198,10 @@
     }
 
     function savePage() {
+		if (!isConsentGiven()){
+			verifyConsent(true);
+			return;
+		}
       const breakTime = parseInt(document.getElementById("breakTime").value);
       const from = getTimeAsHour("from");
       const to = getTimeAsHour("to");
@@ -294,6 +319,62 @@
 			</div>`
 		document.body.appendChild(el);
 			  }
+
+	function createConsentModal(withPageSave) {
+	    // Check if the modal already exists
+	    if (document.getElementById('consent-popup')) {
+	        return;
+	    }
+	
+	    const ov = document.createElement('div');
+	    ov.id = 'overlay';
+		document.body.appendChild(ov);
+	
+	    const popup = document.createElement('div');
+	    popup.id = 'consent-popup';
+	    popup.classList.add("container");
+	
+	    const message = document.createElement('p');
+	    message.textContent = 'This app saves data in order to save the page.';
+	
+	    const button = document.createElement('button');
+	    button.textContent = 'I agree';
+		button.classList.add("action-btn");
+	    button.onclick = function() {
+	        document.cookie = "user_consent=true; path=/; max-age=" + (60*60*24*365); // 1 year
+	        popup.remove();
+			ov.remove();
+			if (withPageSave){
+				savePage();
+			}
+	    };
+	
+	    const button2 = document.createElement('button');
+	    button2.textContent = "I don't agree";
+	    button2.onclick = function() {
+			window.alert("Without consent you won't be able to edit the page");
+	        popup.remove();
+			ov.remove();
+	    };
+	    popup.appendChild(message);
+	    popup.appendChild(button);
+	    popup.appendChild(button2);
+	    document.body.appendChild(popup);
+	}
+
+	function isConsentGiven() {
+    if (!document.cookie.split('; ').find(row => row.startsWith('user_consent='))) {
+		return false;
+    }
+				return true;
+	}
+
+	function verifyConsent(withPageSave=false) {
+		if (! isConsentGiven()){
+	        createConsentModal(true);
+	    } 
+	}
+
   </script>
 </body>
 </html>
